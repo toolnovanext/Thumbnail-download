@@ -230,6 +230,8 @@
             }
         }
     </style>
+    <script src="https://toolnovanext.github.io/scripts/navigation.js" defer></script>
+    <script src="https://toolnovanext.github.io/scripts/notification.js" defer></script>
 </head>
 <body>
     <div class="container">
@@ -312,114 +314,3 @@
             };
             
             const showPreviewAndOptions = () => {
-                thumbnailPreview.style.display = 'block';
-                downloadOptions.style.display = 'flex';
-            };
-
-            const hidePreviewAndOptions = () => {
-                thumbnailPreview.style.display = 'none';
-                downloadOptions.style.display = 'none';
-            };
-
-            const updatePreviewImage = (vId, quality) => {
-                let qualityIndex = qualities.indexOf(quality);
-                
-                thumbnailImage.onerror = () => {
-                    qualityIndex++;
-                    if (qualityIndex < qualities.length) {
-                        updatePreviewImage(vId, qualities[qualityIndex]);
-                    } else {
-                         showErrorMessage('Could not load any thumbnail for this video.');
-                    }
-                };
-
-                thumbnailImage.onload = () => {
-                    qualitySelect.value = qualities[qualityIndex];
-                }
-
-                thumbnailImage.src = `https://img.youtube.com/vi/${vId}/${qualities[qualityIndex]}.jpg`;
-            }
-
-            getThumbnailBtn.addEventListener('click', () => {
-                const url = videoLinkInput.value.trim();
-                hideErrorMessage();
-                
-                if (!url) {
-                    showErrorMessage('Please paste a YouTube video link.');
-                    hidePreviewAndOptions();
-                    return;
-                }
-                
-                const newVideoId = extractVideoId(url);
-
-                if (newVideoId) {
-                    videoId = newVideoId;
-                    showPreviewAndOptions();
-                    updatePreviewImage(videoId, qualities[0]); // Start with the best quality
-                } else {
-                    showErrorMessage('Invalid YouTube URL. Please check the link and try again.');
-                    hidePreviewAndOptions();
-                    videoId = '';
-                }
-            });
-
-            downloadBtn.addEventListener('click', async () => {
-                if (!videoId) {
-                    showErrorMessage('Please get a thumbnail first.');
-                    return;
-                }
-                hideErrorMessage();
-                downloadBtn.disabled = true;
-                downloadBtn.textContent = 'Downloading...';
-
-                const selectedQuality = qualitySelect.value;
-                const startIndex = qualities.indexOf(selectedQuality);
-                
-                const qualityName = qualityNameMap[selectedQuality];
-                downloadCounters[selectedQuality]++;
-                const count = downloadCounters[selectedQuality];
-                const filename = `AR-Thumbnail-${qualityName}-${count}.jpg`;
-                
-                let downloaded = false;
-                for (let i = startIndex; i < qualities.length; i++) {
-                    const quality = qualities[i];
-                    const downloadUrl = `https://img.youtube.com/vi/${videoId}/${quality}.jpg`;
-                    
-                    try {
-                        const response = await fetch(downloadUrl);
-                        if (response.ok && response.headers.get('content-length') > 0) {
-                            const blob = await response.blob();
-                            const link = document.createElement('a');
-                            link.href = URL.createObjectURL(blob);
-                            link.download = filename;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            URL.revokeObjectURL(link.href);
-                            downloaded = true;
-                            break; 
-                        }
-                    } catch (error) {
-                        console.error(`Fetch error for ${quality}:`, error);
-                    }
-                }
-
-                if (!downloaded) {
-                    showErrorMessage('Failed to download thumbnail. Please try another video.');
-                    // If download fails, we should decrement the counter
-                    downloadCounters[selectedQuality]--;
-                }
-
-                downloadBtn.disabled = false;
-                downloadBtn.textContent = 'Download Image';
-            });
-
-            qualitySelect.addEventListener('change', () => {
-                 if (videoId) {
-                    updatePreviewImage(videoId, qualitySelect.value);
-                }
-            });
-        });
-    </script>
-</body>
-</html>```
